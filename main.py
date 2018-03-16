@@ -23,9 +23,10 @@ log_dir = 'log/'
 lr = 1e-3
 batch_size = 36
 z_dim = 100
-max_epochs = 10000
+max_epochs = 1000
 d_step = 50
 g_step = 50
+save_summary_steps = 100
 
 # mnist image data
 x_placeholder = tf.placeholder("float", shape=[batch_size, 28, 28, 1], name="x_placeholder")
@@ -41,6 +42,11 @@ d_loss_real = margin_loss(1, Dx)
 d_loss_fake = margin_loss(0, Dg)
 d_loss = d_loss_real + d_loss_fake
 
+tf.summary.scalar("G loss", g_loss)
+tf.summary.scalar("D loss", d_loss)
+tf.summary.image("generated images", Gz.reshape(6*28, 6*28, 1))
+merged = tf.summary.merge_all()
+
 thetas = tf.trainable_variables()
 theta_d = [var for var in thetas if 'd_' in var.name]
 theta_g = [var for var in thetas if 'g_' in var.name]
@@ -52,6 +58,7 @@ with tf.variable_scope(tf.get_variable_scope()) as scope:
 saver = tf.train.Saver()
 
 with tf.Session() as sess:
+    writer = tf.summary.FileWriter(log_dir, sess.graph)
     sess.run(tf.global_variables_initializer())
 
     for epoch in range(max_epochs):
@@ -67,12 +74,6 @@ with tf.Session() as sess:
         print("Time {3}, Step {0}, Discriminator Loss {1:f}, Generator Loss {2:f}".format(
             epoch, d_loss_cur, g_loss_cur, time.strftime("%b %d, %H:%M:%S")))
 
-        if epoch % 1000 == 999:
+        if epoch % 10 == 999:
             saver.save(sess, os.path.join(model_dir, "model.ckpt"), global_step=epoch)
-
-            # sample fake images
-            fake_image = np.array(sess.run(Gz))
-            fake_image = fake_image.flatten().reshape(28*6, 28*6, 1)
-            plt.imshow(fake_image)
-            plt.savefig(os.path.join(data_dir, "checkpoint%s.jpg" % epoch))
-            plt.close()
+            summary = sess.run(merged, feed_dict={x_placeholder: x_image})
