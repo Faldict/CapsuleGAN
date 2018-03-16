@@ -3,9 +3,12 @@ import tensorflow as tf
 import capsule
 
 
-def capsule_discriminator(x_image):
+def capsule_discriminator(x_image, reuse=True):
     """ capsule network as discriminator
     """
+    if reuse:
+        tf.get_variable_scope().reuse_variables()
+
     x = tf.reshape(x_image, [-1, 28, 28, 1])
     conv1 = tf.layers.conv2d(
         inputs=x,
@@ -14,12 +17,14 @@ def capsule_discriminator(x_image):
         padding="valid",
         activation=tf.nn.relu,
         name="d_ReLU_Conv1")
-    conv1 = tf.expand_dim(conv1, axis=-2)
+    conv1 = tf.expand_dims(conv1, axis=-2)
     # Convolutional capsules
-    primary_caps = capsule.conv2d(conv1, 32, 8, [9, 9], strides=(2, 2), name="d_PrimaryCaps")
-    primary_caps = tf.reshape(primary_caps, [-1, primary_caps.shape[1].value * primary_caps.shape[2].value * 32, 8])
+    with tf.variable_scope('d_PrimaryCaps'):
+        primary_caps = capsule.conv2d(conv1, 32, 8, [9, 9], strides=(2, 2))
+        primary_caps = tf.reshape(primary_caps, [-1, primary_caps.shape[1].value * primary_caps.shape[2].value * 32, 8])
     # Fully Connected capsules with routing by agreement. Binary classifier.
-    digit_caps = capsule.dense(primary_caps, 1, 16, iter_routing=3, learn_coupling=False, mapfn_parallel_iterations=16, name="d_DigitCaps")
+    with tf.variable_scope('d_DigitCaps'):
+        digit_caps = capsule.dense(primary_caps, 1, 16, iter_routing=3, learn_coupling=False, mapfn_parallel_iterations=16)
     # The length of the capsule activation vectors.
     length = tf.sqrt(tf.reduce_sum(tf.square(digit_caps), axis=1), name="Length")
     return length
