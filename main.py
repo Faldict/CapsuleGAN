@@ -1,15 +1,27 @@
-import numpy as np 
+from __future__ import print_function
+
+import os
+import time
+
+import numpy as np
+from matplotlib import pyplot as plt
 import tensorflow as tf
+from tensorflow.examples.tutorials.mnist import input_data
+
 from discriminator import *
 from generator import generator
 from utils import margin_loss
 
 
 tf.logging.set_verbosity(tf.logging.INFO)
-mnist = tf.contrib.learn.datasets.load_dataset("mnist")
+mnist = input_data.read_data_sets("MNIST_data", one_hot=True)
+
+model_dir = 'model/'
+data_dir = 'data/'
+log_dir = 'log/'
 
 lr = 1e-3
-batch_size = 32
+batch_size = 36
 z_dim = 100
 max_epochs = 10000
 d_step = 50
@@ -35,6 +47,8 @@ theta_g = [var for var in thetas if 'g_' in var.name]
 d_solver = tf.train.AdamOptimizer(learning_rate=lr).minimize(d_loss, var_list=theta_d)
 g_solver = tf.train.AdamOptimizer(learning_rate=lr).minimize(g_loss, var_list=theta_g)
 
+saver = tf.train.Saver()
+
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
 
@@ -46,3 +60,16 @@ with tf.Session() as sess:
 
         for step in range(g_step):
             g_loss_cur, _ = sess.run([g_loss, g_solver], feed_dict={x_placeholder: x_image})
+
+        print("Time {3}, Step {0}, Discriminator Loss {1:f}, Generator Loss {2:f}".format(
+            epoch, d_loss_cur, g_loss_cur, time.strftime("%b %d, %H:%M:%S")))
+
+        if epoch % 1000 == 999:
+            saver.save(sess, os.path.join(model_dir, "model.ckpt"), global_step=epoch)
+
+            # sample fake images
+            fake_image = np.array(sess.run(Gz))
+            fake_image = fake_image.flatten().reshape(28*6, 28*6, 1)
+            plt.imshow(fake_image)
+            plt.savefig(os.path.join(data_dir, "checkpoint%s.jpg" % epoch))
+            plt.close()
