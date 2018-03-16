@@ -74,6 +74,6 @@ with tf.Session() as sess:
         print("Time {3}, Step {0}, Discriminator Loss {1:f}, Generator Loss {2:f}".format(
             epoch, d_loss_cur, g_loss_cur, time.strftime("%b %d, %H:%M:%S")))
 
-        if epoch % 10 == 999:
+        if epoch % 10 == 99:
             saver.save(sess, os.path.join(model_dir, "model.ckpt"), global_step=epoch)
             summary = sess.run(merged, feed_dict={x_placeholder: x_image})
