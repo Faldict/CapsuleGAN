@@ -4,7 +4,6 @@ import os
 import time
 
 import numpy as np
-from matplotlib import pyplot as plt
 import tensorflow as tf
 from tensorflow.examples.tutorials.mnist import input_data
 
@@ -20,7 +19,7 @@ model_dir = 'model/'
 data_dir = 'data/'
 log_dir = 'log/'
 
-lr = 1e-3
+lr = 1e-5
 batch_size = 36
 z_dim = 100
 max_epochs = 1000
@@ -44,7 +43,7 @@ d_loss = d_loss_real + d_loss_fake
 
 tf.summary.scalar("G loss", g_loss)
 tf.summary.scalar("D loss", d_loss)
-tf.summary.image("generated images", Gz.reshape(6*28, 6*28, 1))
+tf.summary.image("generated images", tf.reshape(Gz, [6*28, 6*28, 1]))
 merged = tf.summary.merge_all()
 
 thetas = tf.trainable_variables()
@@ -74,6 +73,6 @@ with tf.Session() as sess:
         print("Time {3}, Step {0}, Discriminator Loss {1:f}, Generator Loss {2:f}".format(
             epoch, d_loss_cur, g_loss_cur, time.strftime("%b %d, %H:%M:%S")))
 
-        if epoch % 10 == 99:
+        if epoch % 100 == 99:
             saver.save(sess, os.path.join(model_dir, "model.ckpt"), global_step=epoch)
             summary = sess.run(merged, feed_dict={x_placeholder: x_image})
